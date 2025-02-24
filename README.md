@@ -1,1 +1,1 @@
-single agent DQN
+single agent DQN algorithm made by me
