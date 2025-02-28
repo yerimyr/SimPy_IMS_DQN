@@ -116,7 +116,7 @@ for demand_scenario_dict in demand_scenario:
         rl_env.scenario['LEADTIME'] = leadtime_scenario_dict
         # Path for RL experiment logs
         rl_log_path = os.path.join(EXPERIMENT_LOGS, f'RANDOM_case_{case_num}')
-        os.makedirs(rl_log_path)  # Create directory for logs
+        os.makedirs(rl_log_path, exist_ok=True)  # Create directory for logs
         # Initialize TensorBoard writer
         rl_env.writer = SummaryWriter(rl_log_path)
 
@@ -132,7 +132,7 @@ for demand_scenario_dict in demand_scenario:
         meta_env.scenario['LEADTIME'] = leadtime_scenario_dict
         # Path for Meta experiment logs
         meta_log_path = os.path.join(EXPERIMENT_LOGS, f'META_case_{case_num}')
-        os.makedirs(meta_log_path)  # Create directory for logs
+        os.makedirs(meta_log_path, exist_ok=True)  # Create directory for logs
         # Initialize TensorBoard writer
         meta_env.writer = SummaryWriter(meta_log_path)
 

@@ -209,7 +209,7 @@ def DEFINE_FOLDER(folder_name):
         folder_name = os.path.join(folder_name, f"Train_{len(file_list)+1}")
     else:
         folder_name = os.path.join(folder_name, "Train_1")
-    os.makedirs(folder_name)
+    os.makedirs(folder_name, exist_ok=True)
     return folder_name
 
 
@@ -218,7 +218,7 @@ def save_path(path):
         shutil.rmtree(path)
 
     # Create a new folder
-    os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
     return path
 
 

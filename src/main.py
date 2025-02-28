@@ -8,9 +8,6 @@ from stable_baselines3 import DQN, DDPG, PPO
 from log_SimPy import *
 from log_RL import *
 from Deep_Q_Network import *
-import multiprocessing
-
-NUM_PROCESSES = 14  # 사용하고 싶은 코어 개수
 
 def build_model():
     model = DQNAgent(state_dim=env.observation_space.shape[0], 
