@@ -195,8 +195,7 @@ LEADTIME_SCENARIO = {"Dist_Type": "UNIFORM",
 """
 DEMAND_SCENARIO = {"Dist_Type": "GAUSSIAN",
                     "mean": 11.5, 
-                    "std": 2,
-                    "max": 20}
+                    "std": 2}
  
 LEADTIME_SCENARIO = {"Dist_Type": "GAUSSIAN",
                      "mean": 3,
@@ -226,13 +225,7 @@ def save_path(path):
 def DEMAND_QTY_FUNC(scenario):
     # Uniform distribution
     if scenario["Dist_Type"] == "UNIFORM":
-        demand = random.randint(scenario['min'], scenario["max"])
-        if demand < 0:
-            return 1
-        elif demand > INVEN_LEVEL_MAX:
-            return INVEN_LEVEL_MAX
-        else:
-            return demand
+        return random.randint(scenario['min'], scenario["max"])
     # Gaussian distribution
     elif scenario["Dist_Type"] == "GAUSSIAN":
         # Gaussian distribution
@@ -263,6 +256,7 @@ def SUP_LEAD_TIME_FUNC(lead_time_dict):
         return int(round(lead_time))
 
 
+PRINT_GRAPH_RECORD = False
 # Ordering rules : Reorder point (S) and Order quantity (Q)
 # USE_SQPOLICY = True  : When using SQpolicy (DRL is NOT used)
 # USE_SQPOLICY = False  : When NOT using SQpolicy (DRL is used)

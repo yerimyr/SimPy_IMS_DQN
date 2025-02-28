@@ -1,57 +1,85 @@
+import GymWrapper as gw
 import time
-from GymWrapper import *
-from GymEnvironment import *
+import HyperparamTuning as ht  # Module for hyperparameter tuning
+from GymWrapper import GymInterface
 from config_SimPy import *
-from config_DQN import *
+from config_RL import *
+from stable_baselines3 import DQN, DDPG, PPO
+from log_SimPy import *
+from log_RL import *
+from Deep_Q_Network import *
+import multiprocessing
 
-# 실행 시간 측정 시작
+NUM_PROCESSES = 14  # 사용하고 싶은 코어 개수
+
+def build_model():
+    model = DQNAgent(state_dim=env.observation_space.shape[0], 
+                         action_dim=env.action_space.n, 
+                         buffer_size=BUFFER_SIZE, lr=LEARNING_RATE, gamma=GAMMA)
+    return model
+
+
+'''
+def export_report(inventoryList):
+    for x in range(len(inventoryList)):
+        for report in DAILY_REPORTS:
+            export_Daily_Report.append(report[x])
+    daily_reports = pd.DataFrame(export_Daily_Report)
+    daily_reports.columns = ["Day", "Name", "Type",
+                         "Start", "Income", "Outcome", "End"]
+    daily_reports.to_csv("./Daily_Report.csv")
+'''
+
+
+# Start timing the computation
 start_time = time.time()
 
-# 환경 생성 (Single-Agent)
-env = InventoryManagementEnv()
+# Create environment
+env = GymInterface()
 
-# DQN 학습 모델 초기화
-wrapper = GymWrapper(
-    env=env,
-    action_dim=ACTION_MAX-ACTION_MIN+1,
-    state_dim=STATE_DIM,
-    buffer_size=BUFFER_SIZE,
-    batch_size=BATCH_SIZE,
-    lr=LEARNING_RATE,
-    gamma=GAMMA
-)
-
-if LOAD_MODEL:
-    # 저장된 모델 불러오기 및 평가 수행
-    print(f"Loading model from {MODEL_PATH}")
-    try:
-        wrapper.load_model(MODEL_PATH)
-        print("Model loaded successfully")
-        
-        # 모델 평가
-        training_end_time = time.time()
-        wrapper.evaluate(N_EVAL_EPISODES)
-    except FileNotFoundError:
-        print(f"No saved model found at {MODEL_PATH}")
-        exit()
+# Run hyperparameter optimization if enabled
+if OPTIMIZE_HYPERPARAMETERS:
+    ht.run_optuna()
+    # Calculate computation time and print it
+    end_time = time.time()
+    print(f"Computation time: {(end_time - start_time)/60:.2f} minutes ")
 else:
-    # 새로운 모델 학습
-    print("Starting training of new model...")
-    wrapper.train(N_TRAIN_EPISODES, EVAL_INTERVAL)
+    # Build the model
+    if LOAD_MODEL:
+        if RL_ALGORITHM == "DQN":
+            model = DQN.load(os.path.join(
+                SAVED_MODEL_PATH, LOAD_MODEL_NAME), env=env)
+        print(f"{LOAD_MODEL_NAME} is loaded successfully")
+    else:
+        model = build_model()
+        # Train the model
+        for episode in range(N_EPISODES):
+            state = env.reset()
+            done = False
+            while not done:
+                action = model.select_action(state, epsilon = max(0.1, 1.0 - episode/500))
+                next_state, reward, done, _ = env.step(action)                
+                model.buffer.push(state, action, reward, next_state, done)
+                state = next_state
+                model.update(batch_size=32)
+        if SAVE_MODEL:
+            model.save(os.path.join(SAVED_MODEL_PATH, SAVED_MODEL_NAME))
+            print(f"{SAVED_MODEL_NAME} is saved successfully")
+
+        if STATE_TRAIN_EXPORT:
+            gw.export_state('TRAIN')
     training_end_time = time.time()
 
-    # 학습된 모델 평가
-    print("\nStarting evaluation...")
-    wrapper.evaluate(N_EVAL_EPISODES)
+    # Evaluate the trained model
+    mean_reward, std_reward = gw.evaluate_model(model, env, N_EVAL_EPISODES)
+    print(
+        f"Mean reward over {N_EVAL_EPISODES} episodes: {mean_reward:.2f} +/- {std_reward:.2f}")
+    # Calculate computation time and print it
+    end_time = time.time()
+    print(f"Computation time: {(end_time - start_time)/60:.2f} minutes \n",
+          f"Training time: {(training_end_time - start_time)/60:.2f} minutes \n ",
+          f"Test time:{(end_time - training_end_time)/60:.2f} minutes")
 
-# 실행 시간 계산 및 출력
-end_time = time.time()
-print("\nTime Analysis:")
-print(f"Total computation time: {(end_time - start_time)/60:.2f} minutes")
-if not LOAD_MODEL:
-    print(f"Training time: {(training_end_time - start_time)/60:.2f} minutes")
-print(f"Evaluation time: {(end_time - training_end_time)/60:.2f} minutes")
 
-# TensorBoard 실행 방법 안내
-print("\nTo visualize training progress, run:")
-print("tensorboard --logdir=runs")
+# Optionally render the environment
+env.render()
