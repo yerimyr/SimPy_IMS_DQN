@@ -11,7 +11,7 @@ classDiagram
         +evaluate_model(model, env, num_episodes)
         -cal_cost_avg()
         -Visualize_invens(inventory, demand_qty, Mat_order, all_rewards)
-        -export_state
+        -export_state()
     }
 
     class DQN {
